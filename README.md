@@ -1,4 +1,4 @@
-# Solo Gym - Leveling System for Gym Enthusiasts
+# Solo Gymming - Leveling System for Gym Enthusiasts
 
 A Solo Leveling inspired mobile app for gym-goers who want to track their workouts while progressing through missions and milestones. Transform your fitness journey into an RPG-like experience!
 
