@@ -6,6 +6,7 @@ import { MainTabs } from './MainTabs';
 import { CreateWorkoutScreen } from '../screens/CreateWorkoutScreen';
 import { ActiveWorkoutScreen } from '../screens/ActiveWorkoutScreen';
 import { WorkoutCompleteScreen } from '../screens/WorkoutCompleteScreen';
+import { WorkoutDetailScreen } from '../screens/WorkoutDetailScreen';
 import { colors } from '../theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -49,6 +50,18 @@ export const RootNavigator = () => {
         }}
       >
         <Stack.Screen name="MainTabs" component={MainTabs} />
+        <Stack.Screen
+          name="WorkoutDetail"
+          component={WorkoutDetailScreen}
+          options={{
+            headerShown: true,
+            headerTitle: 'Workout Details',
+            headerStyle: {
+              backgroundColor: colors.background.secondary,
+            },
+            headerTintColor: colors.text.primary,
+          }}
+        />
         <Stack.Screen
           name="CreateWorkout"
           component={CreateWorkoutScreen}

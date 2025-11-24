@@ -1,11 +1,12 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { UserProfile, Workout, Mission, Exercise } from '../types';
+import { UserProfile, Workout, Mission, Exercise, WorkoutTemplate } from '../types';
 
 const KEYS = {
   USER_PROFILE: '@solo_gym_user_profile',
   WORKOUTS: '@solo_gym_workouts',
   MISSIONS: '@solo_gym_missions',
   EXERCISES: '@solo_gym_exercises',
+  WORKOUT_TEMPLATES: '@solo_gym_workout_templates',
 };
 
 // User Profile Storage
@@ -140,6 +141,66 @@ export const addExercise = async (exercise: Exercise): Promise<void> => {
   }
 };
 
+// Workout Templates Storage
+export const saveWorkoutTemplate = async (template: WorkoutTemplate): Promise<void> => {
+  try {
+    const templates = await getWorkoutTemplates();
+
+    // Limit to 5 templates
+    if (templates.length >= 5 && !templates.find(t => t.id === template.id)) {
+      throw new Error('Maximum of 5 workout templates reached. Delete an existing template to add a new one.');
+    }
+
+    // Update existing or add new
+    const existingIndex = templates.findIndex(t => t.id === template.id);
+    if (existingIndex !== -1) {
+      templates[existingIndex] = template;
+    } else {
+      templates.push(template);
+    }
+
+    await AsyncStorage.setItem(KEYS.WORKOUT_TEMPLATES, JSON.stringify(templates));
+  } catch (error) {
+    console.error('Error saving workout template:', error);
+    throw error;
+  }
+};
+
+export const getWorkoutTemplates = async (): Promise<WorkoutTemplate[]> => {
+  try {
+    const data = await AsyncStorage.getItem(KEYS.WORKOUT_TEMPLATES);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Error getting workout templates:', error);
+    return [];
+  }
+};
+
+export const deleteWorkoutTemplate = async (templateId: string): Promise<void> => {
+  try {
+    const templates = await getWorkoutTemplates();
+    const filteredTemplates = templates.filter(t => t.id !== templateId);
+    await AsyncStorage.setItem(KEYS.WORKOUT_TEMPLATES, JSON.stringify(filteredTemplates));
+  } catch (error) {
+    console.error('Error deleting workout template:', error);
+    throw error;
+  }
+};
+
+export const updateTemplateLastUsed = async (templateId: string): Promise<void> => {
+  try {
+    const templates = await getWorkoutTemplates();
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      template.lastUsed = new Date();
+      await AsyncStorage.setItem(KEYS.WORKOUT_TEMPLATES, JSON.stringify(templates));
+    }
+  } catch (error) {
+    console.error('Error updating template last used:', error);
+    throw error;
+  }
+};
+
 // Clear all data (for testing/reset)
 export const clearAllData = async (): Promise<void> => {
   try {
@@ -148,6 +209,7 @@ export const clearAllData = async (): Promise<void> => {
       KEYS.WORKOUTS,
       KEYS.MISSIONS,
       KEYS.EXERCISES,
+      KEYS.WORKOUT_TEMPLATES,
     ]);
   } catch (error) {
     console.error('Error clearing data:', error);

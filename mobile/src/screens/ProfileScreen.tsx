@@ -134,8 +134,8 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     padding: responsiveSpacing.md,
-    paddingTop: responsiveVerticalSpacing['3xl'],
-    paddingBottom: responsiveVerticalSpacing['5xl'],
+    paddingTop: responsiveVerticalSpacing['xl'],
+    paddingBottom: responsiveVerticalSpacing['xl'],
   },
   loadingText: {
     color: colors.text.primary,

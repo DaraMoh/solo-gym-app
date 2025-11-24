@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   TextInput,
   Modal,
+  Alert,
 } from 'react-native';
 import { colors, typography, spacing, borderRadius } from '../theme';
-import { Exercise, WorkoutExercise, WorkoutSet } from '../types';
-import { getExercises } from '../services/storage';
+import { Exercise, WorkoutExercise, WorkoutSet, WorkoutTemplate } from '../types';
+import { getExercises, saveWorkoutTemplate, getWorkoutTemplates, deleteWorkoutTemplate } from '../services/storage';
 
 interface CreateWorkoutScreenProps {
   navigation: any;
@@ -21,10 +22,13 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
   const [selectedExercises, setSelectedExercises] = useState<WorkoutExercise[]>([]);
   const [availableExercises, setAvailableExercises] = useState<Exercise[]>([]);
   const [showExercisePicker, setShowExercisePicker] = useState(false);
+  const [showTemplatePicker, setShowTemplatePicker] = useState(false);
+  const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     loadExercises();
+    loadTemplates();
   }, []);
 
   const loadExercises = async () => {
@@ -34,6 +38,75 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
       console.log('First exercise:', exercises[0]);
     }
     setAvailableExercises(exercises);
+  };
+
+  const loadTemplates = async () => {
+    const loadedTemplates = await getWorkoutTemplates();
+    setTemplates(loadedTemplates);
+  };
+
+  const loadFromTemplate = (template: WorkoutTemplate) => {
+    setWorkoutTitle(template.title);
+    // Reset set completion status for new workout
+    const resetExercises = template.exercises.map(exercise => ({
+      ...exercise,
+      id: `we_${Date.now()}_${Math.random()}`, // New ID for this instance
+      sets: exercise.sets.map(set => ({ ...set, completed: false })),
+    }));
+    setSelectedExercises(resetExercises);
+    setShowTemplatePicker(false);
+    Alert.alert('Template Loaded', `"${template.title}" has been loaded. You can modify it before starting.`);
+  };
+
+  const saveAsTemplate = async () => {
+    if (!workoutTitle.trim()) {
+      Alert.alert('Missing Title', 'Please enter a workout title before saving as template.');
+      return;
+    }
+
+    if (selectedExercises.length === 0) {
+      Alert.alert('No Exercises', 'Please add at least one exercise before saving as template.');
+      return;
+    }
+
+    try {
+      const template: WorkoutTemplate = {
+        id: `template_${Date.now()}`,
+        userId: 'user_1',
+        title: workoutTitle,
+        exercises: selectedExercises,
+        createdAt: new Date(),
+      };
+
+      await saveWorkoutTemplate(template);
+      await loadTemplates();
+      Alert.alert('Template Saved', `"${workoutTitle}" has been saved as a template!`);
+    } catch (error: any) {
+      Alert.alert('Error', error.message || 'Failed to save template');
+    }
+  };
+
+  const handleDeleteTemplate = (templateId: string, templateName: string) => {
+    Alert.alert(
+      'Delete Template',
+      `Are you sure you want to delete "${templateName}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteWorkoutTemplate(templateId);
+              await loadTemplates();
+              Alert.alert('Deleted', 'Template has been deleted');
+            } catch (error) {
+              Alert.alert('Error', 'Failed to delete template');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const addExercise = (exercise: Exercise) => {
@@ -145,6 +218,20 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.contentContainer}>
+        {/* Load Template Button */}
+        {templates.length > 0 && (
+          <View style={styles.templateSection}>
+            <TouchableOpacity
+              style={styles.loadTemplateButton}
+              onPress={() => setShowTemplatePicker(true)}
+            >
+              <Text style={styles.loadTemplateButtonText}>
+                📋 Load from Saved Workouts ({templates.length}/5)
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Title Input */}
         <View style={styles.section}>
           <Text style={styles.label}>Workout Title</Text>
@@ -273,8 +360,13 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
         </View>
       </ScrollView>
 
-      {/* Start Workout Button */}
+      {/* Footer Buttons */}
       <View style={styles.footer}>
+        {selectedExercises.length > 0 && templates.length < 5 && (
+          <TouchableOpacity style={styles.saveTemplateButton} onPress={saveAsTemplate}>
+            <Text style={styles.saveTemplateButtonText}>💾 Save as Template</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity style={styles.startButton} onPress={startWorkout}>
           <Text style={styles.startButtonText}>Start Workout</Text>
         </TouchableOpacity>
@@ -315,6 +407,53 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
                   <Text style={styles.exerciseItemCategory}>{exercise.category}</Text>
                 </TouchableOpacity>
               ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Template Picker Modal */}
+      <Modal
+        visible={showTemplatePicker}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowTemplatePicker(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Saved Workouts</Text>
+              <TouchableOpacity onPress={() => setShowTemplatePicker(false)}>
+                <Text style={styles.modalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.templateList}>
+              {templates.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>No saved workouts yet</Text>
+                </View>
+              ) : (
+                templates.map(template => (
+                  <View key={template.id} style={styles.templateItem}>
+                    <TouchableOpacity
+                      style={styles.templateInfo}
+                      onPress={() => loadFromTemplate(template)}
+                    >
+                      <Text style={styles.templateName}>{template.title}</Text>
+                      <Text style={styles.templateDetails}>
+                        {template.exercises.length} exercises
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteTemplateButton}
+                      onPress={() => handleDeleteTemplate(template.id, template.title)}
+                    >
+                      <Text style={styles.deleteTemplateText}>🗑️</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))
+              )}
             </ScrollView>
           </View>
         </View>
@@ -534,5 +673,70 @@ const styles = StyleSheet.create({
   exerciseItemCategory: {
     color: colors.text.tertiary,
     fontSize: typography.fontSize.sm,
+  },
+  // Template styles
+  templateSection: {
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  loadTemplateButton: {
+    backgroundColor: colors.secondary.dark,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+  },
+  loadTemplateButtonText: {
+    color: colors.text.primary,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+  },
+  saveTemplateButton: {
+    backgroundColor: colors.background.elevated,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.lg,
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary.main,
+  },
+  saveTemplateButtonText: {
+    color: colors.primary.light,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.semibold,
+  },
+  templateList: {
+    paddingTop: spacing.md,
+    flex: 1,
+  },
+  templateItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    backgroundColor: colors.background.tertiary,
+    borderRadius: borderRadius.lg,
+    borderWidth: 1,
+    borderColor: colors.border.primary,
+  },
+  templateInfo: {
+    flex: 1,
+  },
+  templateName: {
+    color: colors.text.primary,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semibold,
+    marginBottom: spacing.xs,
+  },
+  templateDetails: {
+    color: colors.text.secondary,
+    fontSize: typography.fontSize.sm,
+  },
+  deleteTemplateButton: {
+    padding: spacing.sm,
+  },
+  deleteTemplateText: {
+    fontSize: typography.fontSize.xl,
   },
 });

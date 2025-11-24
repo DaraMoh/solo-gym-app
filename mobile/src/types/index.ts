@@ -87,6 +87,15 @@ export interface Workout {
   createdAt: Date;
 }
 
+export interface WorkoutTemplate {
+  id: string;
+  userId: string;
+  title: string;
+  exercises: WorkoutExercise[];
+  createdAt: Date;
+  lastUsed?: Date;
+}
+
 // Mission Types
 export enum MissionType {
   DAILY = 'DAILY',

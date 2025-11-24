@@ -3,7 +3,7 @@ import { WorkoutExercise, Workout } from '../types';
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>;
-  WorkoutDetail: { workoutId: string };
+  WorkoutDetail: { workout: Workout };
   CreateWorkout: undefined;
   ActiveWorkout: { title: string; exercises: WorkoutExercise[] };
   WorkoutComplete: {

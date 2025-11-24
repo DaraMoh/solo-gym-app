@@ -1,10 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { colors, typography, spacing, borderRadius, responsiveSpacing, responsiveVerticalSpacing } from '../theme';
 import { UserProfile, Workout } from '../types';
 import { getUserProfile, getWorkouts } from '../services/storage';
+import { RootStackParamList } from '../navigation/types';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
 
 export const HomeScreen = () => {
+  const navigation = useNavigation<NavigationProp>();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [recentWorkouts, setRecentWorkouts] = useState<Workout[]>([]);
 
@@ -105,7 +111,11 @@ export const HomeScreen = () => {
           </View>
         ) : (
           recentWorkouts.map((workout) => (
-            <TouchableOpacity key={workout.id} style={styles.workoutCard}>
+            <TouchableOpacity
+              key={workout.id}
+              style={styles.workoutCard}
+              onPress={() => navigation.navigate('WorkoutDetail', { workout })}
+            >
               <View style={styles.workoutHeader}>
                 <Text style={styles.workoutTitle}>{workout.title}</Text>
                 <View style={styles.xpBadge}>
