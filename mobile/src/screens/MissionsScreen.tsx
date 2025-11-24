@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../theme';
+import { colors, typography, spacing, borderRadius, responsiveSpacing, responsiveVerticalSpacing } from '../theme';
 import { Mission, MissionType, MissionStatus } from '../types';
 import { getMissions } from '../services/storage';
 
@@ -95,7 +95,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   contentContainer: {
-    padding: spacing.md,
+    padding: responsiveSpacing.md,
+    paddingTop: responsiveVerticalSpacing['3xl'],
+    paddingBottom: responsiveVerticalSpacing['5xl'],
   },
   pageTitle: {
     color: colors.text.primary,

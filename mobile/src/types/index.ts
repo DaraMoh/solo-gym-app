@@ -58,8 +58,10 @@ export enum MuscleGroup {
 
 export interface WorkoutSet {
   setNumber: number;
-  reps: number;
-  weight: number; // in lbs
+  reps?: number; // for strength training
+  weight?: number; // in lbs, for strength training
+  duration?: number; // in minutes, for cardio
+  calories?: number; // optional, for cardio
   completed: boolean;
 }
 

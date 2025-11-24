@@ -37,15 +37,18 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
   };
 
   const addExercise = (exercise: Exercise) => {
+    const isCardio = exercise.category === 'CARDIO';
     const workoutExercise: WorkoutExercise = {
       id: `we_${Date.now()}_${Math.random()}`,
       exerciseId: exercise.id,
       exerciseName: exercise.name,
-      sets: [
-        { setNumber: 1, reps: 0, weight: 0, completed: false },
-        { setNumber: 2, reps: 0, weight: 0, completed: false },
-        { setNumber: 3, reps: 0, weight: 0, completed: false },
-      ],
+      sets: isCardio
+        ? [{ setNumber: 1, duration: 0, calories: 0, completed: false }]
+        : [
+            { setNumber: 1, reps: 0, weight: 0, completed: false },
+            { setNumber: 2, reps: 0, weight: 0, completed: false },
+            { setNumber: 3, reps: 0, weight: 0, completed: false },
+          ],
     };
     setSelectedExercises([...selectedExercises, workoutExercise]);
     setShowExercisePicker(false);
@@ -61,11 +64,14 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
       selectedExercises.map(ex => {
         if (ex.id === exerciseId) {
           const newSetNumber = ex.sets.length + 1;
+          const isCardio = ex.sets[0]?.duration !== undefined;
           return {
             ...ex,
             sets: [
               ...ex.sets,
-              { setNumber: newSetNumber, reps: 0, weight: 0, completed: false },
+              isCardio
+                ? { setNumber: newSetNumber, duration: 0, calories: 0, completed: false }
+                : { setNumber: newSetNumber, reps: 0, weight: 0, completed: false },
             ],
           };
         }
@@ -91,7 +97,7 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
   const updateSet = (
     exerciseId: string,
     setNumber: number,
-    field: 'reps' | 'weight',
+    field: 'reps' | 'weight' | 'duration' | 'calories',
     value: string
   ) => {
     setSelectedExercises(
@@ -103,7 +109,7 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
               if (set.setNumber === setNumber) {
                 return {
                   ...set,
-                  [field]: parseInt(value) || 0,
+                  [field]: field === 'duration' ? parseFloat(value) || 0 : parseInt(value) || 0,
                 };
               }
               return set;
@@ -168,56 +174,91 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
               <Text style={styles.emptyText}>No exercises added yet</Text>
             </View>
           ) : (
-            selectedExercises.map((exercise, index) => (
-              <View key={exercise.id} style={styles.exerciseCard}>
-                <View style={styles.exerciseHeader}>
-                  <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
-                  <TouchableOpacity onPress={() => removeExercise(exercise.id)}>
-                    <Text style={styles.removeButton}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Sets */}
-                {exercise.sets.map(set => (
-                  <View key={set.setNumber} style={styles.setRow}>
-                    <Text style={styles.setNumber}>Set {set.setNumber}</Text>
-                    <View style={styles.setInputs}>
-                      <View style={styles.inputGroup}>
-                        <TextInput
-                          style={styles.setInput}
-                          keyboardType="numeric"
-                          placeholder="Reps"
-                          placeholderTextColor={colors.text.tertiary}
-                          value={set.reps > 0 ? set.reps.toString() : ''}
-                          onChangeText={value =>
-                            updateSet(exercise.id, set.setNumber, 'reps', value)
-                          }
-                        />
-                        <Text style={styles.inputLabel}>reps</Text>
-                      </View>
-                      <View style={styles.inputGroup}>
-                        <TextInput
-                          style={styles.setInput}
-                          keyboardType="numeric"
-                          placeholder="Weight"
-                          placeholderTextColor={colors.text.tertiary}
-                          value={set.weight > 0 ? set.weight.toString() : ''}
-                          onChangeText={value =>
-                            updateSet(exercise.id, set.setNumber, 'weight', value)
-                          }
-                        />
-                        <Text style={styles.inputLabel}>lbs</Text>
-                      </View>
-                    </View>
-                    {exercise.sets.length > 1 && (
-                      <TouchableOpacity
-                        onPress={() => removeSet(exercise.id, set.setNumber)}
-                      >
-                        <Text style={styles.removeSetButton}>−</Text>
-                      </TouchableOpacity>
-                    )}
+            selectedExercises.map((exercise) => {
+              const isCardio = exercise.sets[0]?.duration !== undefined;
+              return (
+                <View key={exercise.id} style={styles.exerciseCard}>
+                  <View style={styles.exerciseHeader}>
+                    <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+                    <TouchableOpacity onPress={() => removeExercise(exercise.id)}>
+                      <Text style={styles.removeButton}>✕</Text>
+                    </TouchableOpacity>
                   </View>
-                ))}
+
+                  {/* Sets */}
+                  {exercise.sets.map(set => (
+                    <View key={set.setNumber} style={styles.setRow}>
+                      <Text style={styles.setNumber}>Set {set.setNumber}</Text>
+                      <View style={styles.setInputs}>
+                        {isCardio ? (
+                          <>
+                            <View style={styles.inputGroup}>
+                              <TextInput
+                                style={styles.setInput}
+                                keyboardType="decimal-pad"
+                                placeholder="Time"
+                                placeholderTextColor={colors.text.tertiary}
+                                value={set.duration && set.duration > 0 ? set.duration.toString() : ''}
+                                onChangeText={value =>
+                                  updateSet(exercise.id, set.setNumber, 'duration', value)
+                                }
+                              />
+                              <Text style={styles.inputLabel}>min</Text>
+                            </View>
+                            <View style={styles.inputGroup}>
+                              <TextInput
+                                style={styles.setInput}
+                                keyboardType="numeric"
+                                placeholder="Cal (opt)"
+                                placeholderTextColor={colors.text.tertiary}
+                                value={set.calories && set.calories > 0 ? set.calories.toString() : ''}
+                                onChangeText={value =>
+                                  updateSet(exercise.id, set.setNumber, 'calories', value)
+                                }
+                              />
+                              <Text style={styles.inputLabel}>cal</Text>
+                            </View>
+                          </>
+                        ) : (
+                          <>
+                            <View style={styles.inputGroup}>
+                              <TextInput
+                                style={styles.setInput}
+                                keyboardType="numeric"
+                                placeholder="Reps"
+                                placeholderTextColor={colors.text.tertiary}
+                                value={set.reps && set.reps > 0 ? set.reps.toString() : ''}
+                                onChangeText={value =>
+                                  updateSet(exercise.id, set.setNumber, 'reps', value)
+                                }
+                              />
+                              <Text style={styles.inputLabel}>reps</Text>
+                            </View>
+                            <View style={styles.inputGroup}>
+                              <TextInput
+                                style={styles.setInput}
+                                keyboardType="numeric"
+                                placeholder="Weight"
+                                placeholderTextColor={colors.text.tertiary}
+                                value={set.weight && set.weight > 0 ? set.weight.toString() : ''}
+                                onChangeText={value =>
+                                  updateSet(exercise.id, set.setNumber, 'weight', value)
+                                }
+                              />
+                              <Text style={styles.inputLabel}>lbs</Text>
+                            </View>
+                          </>
+                        )}
+                      </View>
+                      {exercise.sets.length > 1 && (
+                        <TouchableOpacity
+                          onPress={() => removeSet(exercise.id, set.setNumber)}
+                        >
+                          <Text style={styles.removeSetButton}>−</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  ))}
 
                 <TouchableOpacity
                   style={styles.addSetButton}
@@ -226,7 +267,8 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
                   <Text style={styles.addSetButtonText}>+ Add Set</Text>
                 </TouchableOpacity>
               </View>
-            ))
+              );
+            })
           )}
         </View>
       </ScrollView>

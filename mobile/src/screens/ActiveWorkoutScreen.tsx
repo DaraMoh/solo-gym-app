@@ -85,12 +85,24 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
   const calculateTotalVolume = (): number => {
     return workoutExercises.reduce((total, exercise) => {
       const exerciseVolume = exercise.sets.reduce((sum, set) => {
-        if (set.completed) {
+        if (set.completed && set.reps !== undefined && set.weight !== undefined) {
           return sum + set.reps * set.weight;
         }
         return sum;
       }, 0);
       return total + exerciseVolume;
+    }, 0);
+  };
+
+  const calculateTotalCalories = (): number => {
+    return workoutExercises.reduce((total, exercise) => {
+      const exerciseCalories = exercise.sets.reduce((sum, set) => {
+        if (set.completed && set.calories !== undefined) {
+          return sum + set.calories;
+        }
+        return sum;
+      }, 0);
+      return total + exerciseCalories;
     }, 0);
   };
 
@@ -198,6 +210,9 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
 
   const completedSets = getCompletedSetsCount();
   const totalSets = workoutExercises.reduce((sum, ex) => sum + ex.sets.length, 0);
+  const totalVolume = calculateTotalVolume();
+  const totalCalories = calculateTotalCalories();
+  const hasCardio = workoutExercises.some(ex => ex.sets[0]?.duration !== undefined);
 
   return (
     <View style={styles.container}>
@@ -223,44 +238,51 @@ export const ActiveWorkoutScreen: React.FC<ActiveWorkoutScreenProps> = ({
             <Text style={styles.statLabel}>Sets</Text>
           </View>
           <View style={styles.statItem}>
-            <Text style={styles.statValue}>{calculateTotalVolume().toFixed(0)}</Text>
-            <Text style={styles.statLabel}>lbs</Text>
+            <Text style={styles.statValue}>
+              {hasCardio && totalCalories > 0 ? totalCalories.toFixed(0) : totalVolume.toFixed(0)}
+            </Text>
+            <Text style={styles.statLabel}>{hasCardio && totalCalories > 0 ? 'cal' : 'lbs'}</Text>
           </View>
         </View>
       </View>
 
       {/* Exercises */}
       <ScrollView contentContainerStyle={styles.contentContainer}>
-        {workoutExercises.map((exercise, index) => (
-          <View key={exercise.id} style={styles.exerciseCard}>
-            <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
+        {workoutExercises.map((exercise, index) => {
+          const isCardio = exercise.sets[0]?.duration !== undefined;
+          return (
+            <View key={exercise.id} style={styles.exerciseCard}>
+              <Text style={styles.exerciseName}>{exercise.exerciseName}</Text>
 
-            {exercise.sets.map(set => (
-              <TouchableOpacity
-                key={set.setNumber}
-                style={[styles.setRow, set.completed && styles.setRowCompleted]}
-                onPress={() => toggleSetCompletion(exercise.id, set.setNumber)}
-              >
-                <View style={styles.setInfo}>
-                  <Text style={[styles.setText, set.completed && styles.setTextCompleted]}>
-                    Set {set.setNumber}
-                  </Text>
-                  <Text style={[styles.setText, set.completed && styles.setTextCompleted]}>
-                    {set.reps} reps × {set.weight} lbs
-                  </Text>
-                </View>
-                <View
-                  style={[
-                    styles.checkbox,
-                    set.completed && styles.checkboxCompleted,
-                  ]}
+              {exercise.sets.map(set => (
+                <TouchableOpacity
+                  key={set.setNumber}
+                  style={[styles.setRow, set.completed && styles.setRowCompleted]}
+                  onPress={() => toggleSetCompletion(exercise.id, set.setNumber)}
                 >
-                  {set.completed && <Text style={styles.checkmark}>✓</Text>}
-                </View>
-              </TouchableOpacity>
-            ))}
-          </View>
-        ))}
+                  <View style={styles.setInfo}>
+                    <Text style={[styles.setText, set.completed && styles.setTextCompleted]}>
+                      Set {set.setNumber}
+                    </Text>
+                    <Text style={[styles.setText, set.completed && styles.setTextCompleted]}>
+                      {isCardio
+                        ? `${set.duration || 0} min${set.calories ? ` • ${set.calories} cal` : ''}`
+                        : `${set.reps || 0} reps × ${set.weight || 0} lbs`}
+                    </Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.checkbox,
+                      set.completed && styles.checkboxCompleted,
+                    ]}
+                  >
+                    {set.completed && <Text style={styles.checkmark}>✓</Text>}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          );
+        })}
       </ScrollView>
 
       {/* Footer */}

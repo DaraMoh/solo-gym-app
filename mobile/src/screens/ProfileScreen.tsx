@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import { colors, typography, spacing, borderRadius } from '../theme';
+import { colors, typography, spacing, borderRadius, responsiveSpacing, responsiveVerticalSpacing } from '../theme';
 import { UserProfile } from '../types';
 import { getUserProfile, clearAllData } from '../services/storage';
 import { initializeApp } from '../services/initialization';
@@ -133,7 +133,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   contentContainer: {
-    padding: spacing.md,
+    padding: responsiveSpacing.md,
+    paddingTop: responsiveVerticalSpacing['3xl'],
+    paddingBottom: responsiveVerticalSpacing['5xl'],
   },
   loadingText: {
     color: colors.text.primary,

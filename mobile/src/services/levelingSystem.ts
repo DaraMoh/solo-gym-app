@@ -4,6 +4,8 @@ import { Rank, UserProfile, Workout } from '../types';
 const BASE_WORKOUT_XP = 50;
 const XP_PER_SET = 5;
 const XP_PER_LB = 0.2; // Adjusted for lbs (roughly 0.5 / 2.2)
+const XP_PER_CARDIO_MINUTE = 3; // XP per minute of cardio
+const XP_PER_CALORIE = 0.1; // XP per calorie burned
 const DURATION_BONUS_PER_MIN = 2;
 const COMPLETION_BONUS = 25;
 
@@ -32,7 +34,19 @@ export const calculateWorkoutXP = (workout: Workout): number => {
     exercise.sets.forEach((set) => {
       if (set.completed) {
         xp += XP_PER_SET;
-        xp += set.weight * XP_PER_LB;
+
+        // Strength training XP (based on weight and reps)
+        if (set.weight !== undefined && set.reps !== undefined) {
+          xp += (set.weight * XP_PER_LB);
+        }
+
+        // Cardio XP (based on duration and calories)
+        if (set.duration !== undefined) {
+          xp += (set.duration * XP_PER_CARDIO_MINUTE);
+        }
+        if (set.calories !== undefined) {
+          xp += (set.calories * XP_PER_CALORIE);
+        }
       }
     });
   });
