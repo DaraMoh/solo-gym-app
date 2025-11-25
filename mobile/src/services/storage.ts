@@ -146,9 +146,9 @@ export const saveWorkoutTemplate = async (template: WorkoutTemplate): Promise<vo
   try {
     const templates = await getWorkoutTemplates();
 
-    // Limit to 5 templates
-    if (templates.length >= 5 && !templates.find(t => t.id === template.id)) {
-      throw new Error('Maximum of 5 workout templates reached. Delete an existing template to add a new one.');
+    // Limit to 7 templates
+    if (templates.length >= 7 && !templates.find(t => t.id === template.id)) {
+      throw new Error('Maximum of 7 workout templates reached. Delete an existing template to add a new one.');
     }
 
     // Update existing or add new

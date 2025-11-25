@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { colors, typography, spacing, borderRadius } from '../theme';
-import { Exercise, WorkoutExercise, WorkoutSet, WorkoutTemplate } from '../types';
+import { Exercise, WorkoutExercise, WorkoutSet, WorkoutTemplate, MuscleGroup, EquipmentType, DifficultyLevel } from '../types';
 import { getExercises, saveWorkoutTemplate, getWorkoutTemplates, deleteWorkoutTemplate } from '../services/storage';
 
 interface CreateWorkoutScreenProps {
@@ -25,6 +25,12 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
   const [showTemplatePicker, setShowTemplatePicker] = useState(false);
   const [templates, setTemplates] = useState<WorkoutTemplate[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Filter states
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState<MuscleGroup | null>(null);
+  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentType | null>(null);
+  const [selectedDifficulty, setSelectedDifficulty] = useState<DifficultyLevel | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     loadExercises();
@@ -211,9 +217,33 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
     });
   };
 
-  const filteredExercises = availableExercises.filter(ex =>
-    ex.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const resetFilters = () => {
+    setSelectedMuscleGroup(null);
+    setSelectedEquipment(null);
+    setSelectedDifficulty(null);
+    setSearchQuery('');
+  };
+
+  const filteredExercises = availableExercises.filter(ex => {
+    // Search query filter
+    const matchesSearch = ex.name.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Muscle group filter
+    const matchesMuscleGroup = !selectedMuscleGroup ||
+      ex.muscleGroups.includes(selectedMuscleGroup);
+
+    // Equipment filter
+    const matchesEquipment = !selectedEquipment ||
+      ex.equipment === selectedEquipment;
+
+    // Difficulty filter
+    const matchesDifficulty = !selectedDifficulty ||
+      ex.difficulty === selectedDifficulty;
+
+    return matchesSearch && matchesMuscleGroup && matchesEquipment && matchesDifficulty;
+  });
+
+  const activeFilterCount = [selectedMuscleGroup, selectedEquipment, selectedDifficulty].filter(Boolean).length;
 
   return (
     <View style={styles.container}>
@@ -226,7 +256,7 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
               onPress={() => setShowTemplatePicker(true)}
             >
               <Text style={styles.loadTemplateButtonText}>
-                📋 Load from Saved Workouts ({templates.length}/5)
+                📋 Load from Saved Workouts ({templates.length}/7)
               </Text>
             </TouchableOpacity>
           </View>
@@ -362,7 +392,7 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
 
       {/* Footer Buttons */}
       <View style={styles.footer}>
-        {selectedExercises.length > 0 && templates.length < 5 && (
+        {selectedExercises.length > 0 && templates.length < 7 && (
           <TouchableOpacity style={styles.saveTemplateButton} onPress={saveAsTemplate}>
             <Text style={styles.saveTemplateButtonText}>💾 Save as Template</Text>
           </TouchableOpacity>
@@ -395,6 +425,111 @@ export const CreateWorkoutScreen: React.FC<CreateWorkoutScreenProps> = ({ naviga
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
+
+            {/* Filter Toggle Button */}
+            <TouchableOpacity
+              style={styles.filterToggleButton}
+              onPress={() => setShowFilters(!showFilters)}
+            >
+              <Text style={styles.filterToggleText}>
+                🔍 Filters {activeFilterCount > 0 ? `(${activeFilterCount})` : ''}
+              </Text>
+            </TouchableOpacity>
+
+            {/* Filter Section */}
+            {showFilters && (
+              <View style={styles.filtersContainer}>
+                {/* Muscle Group Filter */}
+                <View style={styles.filterSection}>
+                  <Text style={styles.filterLabel}>Muscle Group</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterChips}>
+                    {Object.values(MuscleGroup).map((muscle) => (
+                      <TouchableOpacity
+                        key={muscle}
+                        style={[
+                          styles.filterChip,
+                          selectedMuscleGroup === muscle && styles.filterChipActive,
+                        ]}
+                        onPress={() => setSelectedMuscleGroup(selectedMuscleGroup === muscle ? null : muscle)}
+                      >
+                        <Text
+                          style={[
+                            styles.filterChipText,
+                            selectedMuscleGroup === muscle && styles.filterChipTextActive,
+                          ]}
+                        >
+                          {muscle.replace('_', ' ')}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                {/* Equipment Filter */}
+                <View style={styles.filterSection}>
+                  <Text style={styles.filterLabel}>Equipment</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterChips}>
+                    {Object.values(EquipmentType).map((equipment) => (
+                      <TouchableOpacity
+                        key={equipment}
+                        style={[
+                          styles.filterChip,
+                          selectedEquipment === equipment && styles.filterChipActive,
+                        ]}
+                        onPress={() => setSelectedEquipment(selectedEquipment === equipment ? null : equipment)}
+                      >
+                        <Text
+                          style={[
+                            styles.filterChipText,
+                            selectedEquipment === equipment && styles.filterChipTextActive,
+                          ]}
+                        >
+                          {equipment.replace('_', ' ')}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                {/* Difficulty Filter */}
+                <View style={styles.filterSection}>
+                  <Text style={styles.filterLabel}>Difficulty</Text>
+                  <View style={styles.filterChips}>
+                    {Object.values(DifficultyLevel).map((difficulty) => (
+                      <TouchableOpacity
+                        key={difficulty}
+                        style={[
+                          styles.filterChip,
+                          selectedDifficulty === difficulty && styles.filterChipActive,
+                        ]}
+                        onPress={() => setSelectedDifficulty(selectedDifficulty === difficulty ? null : difficulty)}
+                      >
+                        <Text
+                          style={[
+                            styles.filterChipText,
+                            selectedDifficulty === difficulty && styles.filterChipTextActive,
+                          ]}
+                        >
+                          {difficulty}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                {/* Reset Filters Button */}
+                {activeFilterCount > 0 && (
+                  <TouchableOpacity style={styles.resetFiltersButton} onPress={resetFilters}>
+                    <Text style={styles.resetFiltersText}>Clear All Filters</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
+
+            {/* Results Count */}
+            <Text style={styles.resultsCount}>
+              {filteredExercises.length} exercise{filteredExercises.length !== 1 ? 's' : ''} found
+            </Text>
 
             <ScrollView style={styles.exerciseList}>
               {filteredExercises.map(exercise => (
@@ -738,5 +873,81 @@ const styles = StyleSheet.create({
   },
   deleteTemplateText: {
     fontSize: typography.fontSize.xl,
+  },
+  filterToggleButton: {
+    backgroundColor: colors.background.tertiary,
+    padding: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+  },
+  filterToggleText: {
+    color: colors.text.primary,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
+  },
+  filtersContainer: {
+    backgroundColor: colors.background.secondary,
+    padding: spacing.md,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+    borderRadius: borderRadius.md,
+  },
+  filterSection: {
+    marginBottom: spacing.md,
+  },
+  filterLabel: {
+    color: colors.text.primary,
+    fontSize: typography.fontSize.sm,
+    fontWeight: typography.fontWeight.semibold,
+    marginBottom: spacing.sm,
+  },
+  filterChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  filterChip: {
+    backgroundColor: colors.background.tertiary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.full,
+    borderWidth: 1,
+    borderColor: colors.border.primary,
+    marginRight: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  filterChipActive: {
+    backgroundColor: colors.primary.main,
+    borderColor: colors.primary.main,
+  },
+  filterChipText: {
+    color: colors.text.secondary,
+    fontSize: typography.fontSize.sm,
+    textTransform: 'capitalize',
+  },
+  filterChipTextActive: {
+    color: colors.text.primary,
+    fontWeight: typography.fontWeight.semibold,
+  },
+  resetFiltersButton: {
+    backgroundColor: colors.background.elevated,
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  resetFiltersText: {
+    color: colors.primary.main,
+    fontSize: typography.fontSize.base,
+    fontWeight: typography.fontWeight.medium,
+  },
+  resultsCount: {
+    color: colors.text.tertiary,
+    fontSize: typography.fontSize.sm,
+    textAlign: 'center',
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
   },
 });

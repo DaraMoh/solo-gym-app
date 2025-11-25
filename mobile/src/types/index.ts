@@ -36,6 +36,8 @@ export interface Exercise {
   name: string;
   category: ExerciseCategory;
   muscleGroups: MuscleGroup[];
+  equipment?: EquipmentType;
+  difficulty?: DifficultyLevel;
   isCustom: boolean;
 }
 
@@ -53,7 +55,26 @@ export enum MuscleGroup {
   ARMS = 'ARMS',
   LEGS = 'LEGS',
   CORE = 'CORE',
-  FULL_BODY = 'FULL_BODY',
+}
+
+export enum EquipmentType {
+  BARBELL = 'BARBELL',
+  DUMBBELL = 'DUMBBELL',
+  BODYWEIGHT = 'BODYWEIGHT',
+  MACHINE = 'MACHINE',
+  CABLE = 'CABLE',
+  KETTLEBELL = 'KETTLEBELL',
+  RESISTANCE_BAND = 'RESISTANCE_BAND',
+  MEDICINE_BALL = 'MEDICINE_BALL',
+  EXERCISE_BALL = 'EXERCISE_BALL',
+  FOAM_ROLLER = 'FOAM_ROLLER',
+  OTHER = 'OTHER',
+}
+
+export enum DifficultyLevel {
+  BEGINNER = 'BEGINNER',
+  INTERMEDIATE = 'INTERMEDIATE',
+  EXPERT = 'EXPERT',
 }
 
 export interface WorkoutSet {
